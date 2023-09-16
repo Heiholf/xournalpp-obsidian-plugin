@@ -1,8 +1,8 @@
 import { Plugin } from "obsidian";
-import SampleSettingTab from "settings";
-import addAllCommands from "commands";
-import addRibbonIcon from "ribbon";
-import addAllFileMenus from "filemenu";
+import SampleSettingTab from "src/settings";
+import addAllCommands from "src/commands";
+import addRibbonIcon from "src/ribbon";
+import addAllFileMenus from "src/filemenu";
 
 // Remember to rename these classes and interfaces!
 

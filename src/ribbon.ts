@@ -2,7 +2,7 @@ import {
 	compileAllXoppFiles,
 	compileXoppFile,
 	createAndEmbedFile,
-} from "backend";
+} from "src/backend";
 import { FileSystemAdapter, Menu, Notice, Plugin } from "obsidian";
 import * as path from "path";
 

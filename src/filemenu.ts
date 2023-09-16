@@ -1,4 +1,4 @@
-import { compileXoppFile, openXoppFile } from "backend";
+import { compileXoppFile, openXoppFile } from "src/backend";
 import {
 	FileSystemAdapter,
 	ListedFiles,

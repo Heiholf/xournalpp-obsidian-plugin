@@ -1,4 +1,4 @@
-import { compileAllXoppFiles, createAndEmbedFile } from "backend";
+import { compileAllXoppFiles, createAndEmbedFile } from "src/backend";
 import XournalPlugin from "main";
 import { Editor, MarkdownView, MarkdownFileInfo } from "obsidian";
 
