@@ -1,4 +1,8 @@
-import { compileXoppFile, openXoppFile } from "src/backend";
+import {
+	compileXoppFile,
+	createNewXoppFileFromPdf,
+	openXoppFile,
+} from "src/backend";
 import {
 	FileSystemAdapter,
 	ListedFiles,
@@ -69,6 +73,16 @@ function addPdfFileMenu(plugin: Plugin) {
 							} else {
 								new Notice("No .xopp file found");
 							}
+						})
+				);
+
+				menu.addItem((item: MenuItem) =>
+					item
+						.setTitle("Create .xopp")
+						.setIcon("scroll")
+						.onClick(async () => {
+							await createNewXoppFileFromPdf(file, plugin);
+							new Notice(".xopp File created");
 						})
 				);
 			}

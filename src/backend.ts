@@ -5,11 +5,17 @@ import {
 	TFile,
 	Notice,
 	Editor,
+	loadPdfJs,
 } from "obsidian";
 
 import { exec } from "child_process";
 
 import * as path from "path";
+
+import * as gzip from "gzip-js";
+
+import { ReadableStream } from "stream/web";
+import { Blob } from "buffer";
 
 export async function compileXoppFile(
 	file: TAbstractFile | string,
@@ -18,7 +24,7 @@ export async function compileXoppFile(
 	const file_path = file instanceof TAbstractFile ? file.path : file;
 	const fs: FileSystemAdapter = plugin.app.vault.adapter as FileSystemAdapter;
 	const full_path = fs.getFullPath(file_path).replace(".xopp.pdf", ".xopp");
-	var cmd = `start xournalpp "${full_path}" -p "${full_path}.pdf"`;
+	var cmd = `${getSystemPrefix()}xournalpp "${full_path}" -p "${full_path}.pdf"`;
 	await exec(cmd, (err, stdout, stderr) => {
 		console.log(err, stdout, stderr);
 	});
@@ -43,7 +49,7 @@ export async function openXoppFile(
 	const file_path = file instanceof TAbstractFile ? file.path : file;
 	const fs: FileSystemAdapter = plugin.app.vault.adapter as FileSystemAdapter;
 	const full_path = fs.getFullPath(file_path).replace(".xopp.pdf", ".xopp");
-	var cmd = `start xournalpp "${full_path}"`;
+	var cmd = `${getSystemPrefix()}xournalpp "${full_path}"`;
 	await exec(cmd, (err, stdout, stderr) => {
 		console.log(err, stdout, stderr);
 	});
@@ -90,4 +96,92 @@ export async function createNewFile(plugin: Plugin): Promise<string | null> {
 	compileXoppFile(local_path, plugin);
 
 	return local_path;
+}
+
+function getSystemPrefix(): string {
+	switch (process.platform) {
+		case "win32": {
+			return "start ";
+			break;
+		}
+		case "linux": {
+			return "";
+			break;
+		}
+		default: {
+			return "";
+			break;
+		}
+	}
+}
+
+export async function createNewXoppFileFromPdf(
+	file: TAbstractFile | string,
+	plugin: Plugin
+) {
+	const original_pdf_path = file instanceof TAbstractFile ? file.path : file;
+	const new_xopp_file_path = original_pdf_path + ".xopp";
+	const new_bg_pdf_file_path = new_xopp_file_path + ".bg.pdf";
+	const fs: FileSystemAdapter = plugin.app.vault.adapter as FileSystemAdapter;
+
+	const binary: ArrayBuffer = await fs.readBinary(original_pdf_path);
+
+	let pdfjs = await loadPdfJs();
+
+	pdfjs.GlobalWorkerOptions.workerSrc = "worker";
+	let pdf_loader: any = pdfjs.getDocument(binary);
+	let pdf_file: any = await pdf_loader.promise;
+
+	const page_count: number = pdf_file.numPages;
+
+	let viewports: Array<[number, number]> = [];
+
+	for (let i = 0; i < page_count; i++) {
+		const page = await pdf_file.getPage(i + 1);
+		const viewbox = await page.getViewport().viewBox;
+		viewports.push([viewbox[2], viewbox[3]]);
+	}
+
+	let xopp_string = writeXoppXaml(viewports);
+
+	let compressed_xopp = compressWithGzip(xopp_string);
+
+	await fs.writeBinary(new_xopp_file_path, compressed_xopp);
+	await fs.copy(original_pdf_path, new_bg_pdf_file_path);
+}
+
+function writeXoppXaml(page_sizes: Array<[number, number]>): string {
+	var doc: XMLDocument = document.implementation.createDocument("", "", null);
+	var xournalElement = doc.createElement("xournal");
+	xournalElement.setAttribute("creator", "obsidian-xournalpp-plugin");
+
+	let titleElement = doc.createElement("title");
+	titleElement.appendText("Titel");
+	xournalElement.appendChild(titleElement);
+
+	page_sizes.forEach((value, index) => {
+		var pageElement = doc.createElement("page");
+		pageElement.setAttribute("width", value[0].toString());
+		pageElement.setAttribute("height", value[1].toString());
+		var background_element = doc.createElement("background");
+		background_element.setAttribute("type", "pdf");
+		if (index == 0) {
+			background_element.setAttribute("domain", "attach");
+			background_element.setAttribute("filename", "bg.pdf");
+		}
+		background_element.setAttribute("pageno", (index + 1).toString());
+		pageElement.appendChild(background_element);
+		var layerElement = doc.createElement("layer");
+		pageElement.appendChild(layerElement);
+
+		xournalElement.appendChild(pageElement);
+	});
+
+	doc.appendChild(xournalElement);
+
+	return new XMLSerializer().serializeToString(doc.documentElement);
+}
+
+function compressWithGzip(inputString: string): ArrayBuffer {
+	return gzip.zip(inputString);
 }
