@@ -6,13 +6,11 @@ import {
 	Notice,
 	Editor,
 	loadPdfJs,
+	ListedFiles,
 } from "obsidian";
-
-import { exec } from "child_process";
-
 import * as path from "path";
-
 import * as gzip from "gzip-js";
+import { exec } from "child_process";
 
 export async function compileXoppFile(
 	file: TAbstractFile | string,
@@ -80,8 +78,10 @@ export async function createNewFile(plugin: Plugin): Promise<string | null> {
 	const fs: FileSystemAdapter = plugin.app.vault.adapter as FileSystemAdapter;
 
 	const default_path: string = getPluginDir(`default.xopp`, plugin);
-	const local_path: string = path.join(
-		plugin.app.workspace.activeEditor?.file?.path! + ".1.xopp"
+	const local_path: string = await getAvailableFileName(
+		plugin.app.workspace.activeEditor?.file?.path!,
+		".xopp",
+		fs
 	);
 
 	try {
@@ -181,4 +181,33 @@ function writeXoppXaml(page_sizes: Array<[number, number]>): string {
 
 function compressWithGzip(inputString: string): number[] {
 	return gzip.zip(inputString);
+}
+
+async function getAvailableFileName(
+	filePath: string,
+	suffix: string,
+	fs: FileSystemAdapter
+): Promise<string> {
+	var fileList: ListedFiles = await fs.list(path.dirname(filePath));
+
+	var index: number = 1;
+	var getCurrentDesiredName: () => string = () =>
+		filePath + "." + index.toString() + suffix;
+
+	console.log(fileList.files);
+
+	var loopStopper = 0;
+	while (loopStopper < 50) {
+		var currentDesiredName = getCurrentDesiredName();
+		console.log(currentDesiredName);
+		if (
+			!fileList.files.some(
+				(value) => path.relative(currentDesiredName, value) == ""
+			)
+		)
+			break;
+		index++;
+		loopStopper++;
+	}
+	return getCurrentDesiredName();
 }
