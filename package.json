@@ -1,7 +1,7 @@
 {
-	"name": "obsidian-sample-plugin",
-	"version": "1.0.0",
-	"description": "This is a sample plugin for Obsidian (https://obsidian.md)",
+	"name": "xournalpp-obsidian-plugin",
+	"version": "0.1.1",
+	"description": "Enables easy integration of xournalpp files into obsidian.",
 	"main": "main.js",
 	"scripts": {
 		"dev": "node esbuild.config.mjs",
@@ -12,6 +12,7 @@
 	"author": "",
 	"license": "MIT",
 	"devDependencies": {
+		"@types/gzip-js": "^0.3.3",
 		"@types/node": "^16.11.6",
 		"@typescript-eslint/eslint-plugin": "5.29.0",
 		"@typescript-eslint/parser": "5.29.0",
@@ -22,7 +23,6 @@
 		"typescript": "4.7.4"
 	},
 	"dependencies": {
-		"gzip-js": "^0.3.2",
-		"pdfjs-dist": "^3.10.111"
+		"gzip-js": "^0.3.2"
 	}
 }

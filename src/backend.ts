@@ -14,9 +14,6 @@ import * as path from "path";
 
 import * as gzip from "gzip-js";
 
-import { ReadableStream } from "stream/web";
-import { Blob } from "buffer";
-
 export async function compileXoppFile(
 	file: TAbstractFile | string,
 	plugin: Plugin
@@ -146,7 +143,7 @@ export async function createNewXoppFileFromPdf(
 
 	let compressed_xopp = compressWithGzip(xopp_string);
 
-	await fs.writeBinary(new_xopp_file_path, compressed_xopp);
+	await fs.writeBinary(new_xopp_file_path, new Uint8Array(compressed_xopp));
 	await fs.copy(original_pdf_path, new_bg_pdf_file_path);
 }
 
@@ -182,6 +179,6 @@ function writeXoppXaml(page_sizes: Array<[number, number]>): string {
 	return new XMLSerializer().serializeToString(doc.documentElement);
 }
 
-function compressWithGzip(inputString: string): ArrayBuffer {
+function compressWithGzip(inputString: string): number[] {
 	return gzip.zip(inputString);
 }
