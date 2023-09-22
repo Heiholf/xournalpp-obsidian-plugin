@@ -86,7 +86,8 @@ export async function createNewFile(plugin: Plugin): Promise<string | null> {
 
 	try {
 		await fs.copy(default_path, local_path);
-	} catch {
+	} catch (e) {
+		console.log(e);
 		new Notice("File already exists");
 	}
 
@@ -117,7 +118,7 @@ export async function createNewXoppFileFromPdf(
 	plugin: Plugin
 ) {
 	const original_pdf_path = file instanceof TAbstractFile ? file.path : file;
-	const new_xopp_file_path = original_pdf_path + ".xopp";
+	const new_xopp_file_path = original_pdf_path.replace(".pdf", ".xopp");
 	const new_bg_pdf_file_path = new_xopp_file_path + ".bg.pdf";
 	const fs: FileSystemAdapter = plugin.app.vault.adapter as FileSystemAdapter;
 
@@ -145,6 +146,7 @@ export async function createNewXoppFileFromPdf(
 
 	await fs.writeBinary(new_xopp_file_path, new Uint8Array(compressed_xopp));
 	await fs.copy(original_pdf_path, new_bg_pdf_file_path);
+	await compileXoppFile(new_xopp_file_path, plugin);
 }
 
 function writeXoppXaml(page_sizes: Array<[number, number]>): string {
@@ -194,12 +196,9 @@ async function getAvailableFileName(
 	var getCurrentDesiredName: () => string = () =>
 		filePath + "." + index.toString() + suffix;
 
-	console.log(fileList.files);
-
 	var loopStopper = 0;
 	while (loopStopper < 50) {
 		var currentDesiredName = getCurrentDesiredName();
-		console.log(currentDesiredName);
 		if (
 			!fileList.files.some(
 				(value) => path.relative(currentDesiredName, value) == ""
